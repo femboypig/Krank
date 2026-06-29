@@ -133,10 +133,6 @@ class AIDJTransitionCoordinator {
             playerA.volume = Float(1.0 - progress)
             playerB.volume = Float(progress)
             
-            // Smoothly slide player B's tempo back to its native 1.0 speed
-            let currentRate = targetRate + Float(progress) * (1.0 - targetRate)
-            playerB.rate = currentRate
-            
             if currentStep >= steps {
                 timer.invalidate()
                 playerA.stop()

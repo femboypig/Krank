@@ -149,7 +149,7 @@ extension ViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         label.textColor = primaryTextColor()
-        label.text = "AI DJ Transitions"
+        label.text = "DJ Transitions"
         card.addSubview(label)
         
         let descLabel = UILabel()

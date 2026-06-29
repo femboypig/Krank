@@ -92,9 +92,12 @@ extension ViewController {
             updateMiniPlayerUI()
             updatePlayerFavoriteButton()
             
-            // Scroll to full player page
+            // Scroll to full player page ONLY if we are not already on the player page
             let width = scrollView.frame.size.width
-            scrollView.setContentOffset(CGPoint(x: width, y: 0), animated: true)
+            let currentPage = Int(round(scrollView.contentOffset.x / width))
+            if currentPage != 2 {
+                scrollView.setContentOffset(CGPoint(x: width * 2, y: 0), animated: true)
+            }
             
         } catch {
             print("Audio Player playback error: \(error)")
@@ -330,8 +333,9 @@ extension ViewController {
         
         updateNowPlayingInfoElapsedTimeOnly()
         
-        // Smart AI DJ Transition trigger: 6 seconds before natural completion
-        if !isRepeatEnabled && player.duration - player.currentTime <= 6.0 && player.duration > 12.0 && !aidj.isTransitioning {
+        // Smart DJ Transition trigger: 6 seconds before natural completion
+        let aidjEnabled = UserDefaults.standard.bool(forKey: "Krank_AIDJEnabled")
+        if aidjEnabled && !isRepeatEnabled && player.duration - player.currentTime <= 6.0 && player.duration > 12.0 && !aidj.isTransitioning {
             transitionToNextTrack()
         }
     }
