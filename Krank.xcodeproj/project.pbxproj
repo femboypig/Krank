@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		04C7504596FA5DF98520F8F2 /* AIDJEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C766D736C95B5AB14A99E4 /* AIDJEngine.swift */; };
 		04C7931A17715DE793C71547 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C7BAD1435D5DFEB64C61A0 /* Track.swift */; };
 		04C7421C08465A9FA4875C44 /* BottomSheetItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C7B9DF903C58FF8783CA0D /* BottomSheetItem.swift */; };
 		04C72DF3F9A85B2BB4D4A129 /* InputSubmitWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C791FFC8FB56E8AEAB06A7 /* InputSubmitWrapper.swift */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		04C766D736C95B5AB14A99E4 /* AIDJEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIDJEngine.swift; sourceTree = "<group>"; };
 		04C7BAD1435D5DFEB64C61A0 /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
 		04C7B9DF903C58FF8783CA0D /* BottomSheetItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheetItem.swift; sourceTree = "<group>"; };
 		04C791FFC8FB56E8AEAB06A7 /* InputSubmitWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSubmitWrapper.swift; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 		04C7491E2FEFF60C00B62262 /* Krank */ = {
 			isa = PBXGroup;
 			children = (
+				04C766D736C95B5AB14A99E4 /* AIDJEngine.swift */,
 				04C7BAD1435D5DFEB64C61A0 /* Track.swift */,
 				04C7B9DF903C58FF8783CA0D /* BottomSheetItem.swift */,
 				04C791FFC8FB56E8AEAB06A7 /* InputSubmitWrapper.swift */,
@@ -171,6 +174,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04C7504596FA5DF98520F8F2 /* AIDJEngine.swift in Sources */,
 				04C7931A17715DE793C71547 /* Track.swift in Sources */,
 				04C7421C08465A9FA4875C44 /* BottomSheetItem.swift in Sources */,
 				04C72DF3F9A85B2BB4D4A129 /* InputSubmitWrapper.swift in Sources */,

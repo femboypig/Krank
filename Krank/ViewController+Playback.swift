@@ -152,6 +152,14 @@ extension ViewController {
     @objc func playNextTrack() {
         guard !filteredTracks.isEmpty else { return }
         
+        if audioPlayer?.isPlaying == true {
+            transitionToNextTrack()
+        } else {
+            forcePlayNextTrack()
+        }
+    }
+    
+    func forcePlayNextTrack() {
         if isShuffleEnabled {
             if shuffledIndices.isEmpty {
                 rebuildShuffleQueue()
@@ -178,6 +186,85 @@ extension ViewController {
                 currentTrackIndex = 0
             }
             playCurrentTrack()
+        }
+    }
+    
+    func transitionToNextTrack() {
+        guard !filteredTracks.isEmpty, let currentPlayer = audioPlayer else {
+            forcePlayNextTrack()
+            return
+        }
+        
+        // Find next track index
+        let nextIndex: Int
+        if isShuffleEnabled {
+            if shuffledIndices.isEmpty {
+                rebuildShuffleQueue()
+            }
+            var nextPos = shuffledPosition
+            if nextPos >= shuffledIndices.count - 1 {
+                nextPos = 0
+            } else {
+                nextPos += 1
+            }
+            nextIndex = shuffledIndices[nextPos]
+        } else {
+            if let index = currentTrackIndex {
+                nextIndex = (index + 1) % filteredTracks.count
+            } else {
+                nextIndex = 0
+            }
+        }
+        
+        let nextTrack = filteredTracks[nextIndex]
+        
+        // Stop progress updates during transition
+        updateTimer?.invalidate()
+        
+        aidj.startTransition(from: currentPlayer, toTrack: nextTrack.url) { [weak self] newPlayer in
+            guard let self = self else { return }
+            
+            self.audioPlayer = newPlayer
+            self.audioPlayer?.delegate = self
+            self.currentTrackIndex = nextIndex
+            
+            if self.isShuffleEnabled {
+                if self.shuffledPosition >= self.shuffledIndices.count - 1 {
+                    self.shuffledPosition = 0
+                } else {
+                    self.shuffledPosition += 1
+                }
+            }
+            
+            // Full UI updating
+            let track = self.filteredTracks[nextIndex]
+            self.playPauseButton.setImage(UIImage(systemName: "pause.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
+            self.trackTitleLabel.text = track.title
+            
+            if track.artist != "Unknown Artist" && !track.artist.isEmpty {
+                self.artistLabel.text = track.artist
+                self.artistLabel.isHidden = false
+            } else {
+                self.artistLabel.text = ""
+                self.artistLabel.isHidden = true
+            }
+            
+            if let artwork = track.artwork {
+                self.coverImageView.image = artwork
+            } else {
+                self.coverImageView.image = UIImage(named: "logo")
+            }
+            
+            self.progressSlider.maximumValue = Float(track.duration)
+            self.progressSlider.value = 0
+            
+            self.startTimer()
+            self.startArtworkAnimation()
+            self.updateNowPlayingInfo()
+            self.tableView.reloadData()
+            
+            self.updateMiniPlayerUI()
+            self.updatePlayerFavoriteButton()
         }
     }
     
@@ -229,6 +316,11 @@ extension ViewController {
         remainingLabel.text = "-" + formatTime(player.duration - player.currentTime)
         
         updateNowPlayingInfoElapsedTimeOnly()
+        
+        // Smart AI DJ Transition trigger: 6 seconds before natural completion
+        if !isRepeatEnabled && player.duration - player.currentTime <= 6.0 && player.duration > 12.0 && !aidj.isTransitioning {
+            transitionToNextTrack()
+        }
     }
     
     @objc func sliderValueChanging(_ sender: UISlider) {

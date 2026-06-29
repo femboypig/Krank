@@ -77,6 +77,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // Haptics & Drum Centering State
     var lastCenterRow: Int?
     let scrollFeedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+    let aidj = AIDJTransitionCoordinator()
     
     // Favorites & Playlists Local Data Store
     var favoriteTracks: Set<String> = []
