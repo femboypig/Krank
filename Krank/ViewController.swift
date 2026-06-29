@@ -125,6 +125,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+        
+        // Listen for app foregrounding to refresh UI state
+        NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
     
     override func viewDidLayoutSubviews() {
@@ -147,6 +150,14 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
             updateTableGradientMaskFrame()
             updateFilterPillBorders()
+        }
+    }
+    
+    @objc func appWillEnterForeground() {
+        updateMiniPlayerUI()
+        if let player = audioPlayer {
+            let playIcon = player.isPlaying ? "pause.fill" : "play.fill"
+            playPauseButton.setImage(UIImage(systemName: playIcon, withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
         }
     }
 }

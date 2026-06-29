@@ -231,9 +231,13 @@ extension ViewController {
         let nextTrack = filteredTracks[nextIndex]
         
         // Start transition background tasks (tempo mapping & volume ramping)
-        aidj.startTransition(from: currentPlayer, toTrack: nextTrack.url) { _ in
+        aidj.startTransition(from: currentPlayer, toTrack: nextTrack.url, onPlayStarted: { [weak self] _ in
+            guard let self = self else { return }
+            self.playPauseButton.setImage(UIImage(systemName: "pause.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
+            self.updateMiniPlayerUI()
+        }, completion: { _ in
             // Done transitioning
-        }
+        })
         
         // Immediately swap active reference to new player B, so timer & UI update instantly!
         if let playerB = aidj.secondaryPlayer {

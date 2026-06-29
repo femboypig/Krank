@@ -78,7 +78,7 @@ class AIDJTransitionCoordinator {
     
     var isTransitioning = false
     
-    func startTransition(from playerA: AVAudioPlayer, toTrack url: URL, completion: @escaping (AVAudioPlayer) -> Void) {
+    func startTransition(from playerA: AVAudioPlayer, toTrack url: URL, onPlayStarted: @escaping (AVAudioPlayer) -> Void, completion: @escaping (AVAudioPlayer) -> Void) {
         guard !isTransitioning else { return }
         isTransitioning = true
         
@@ -109,6 +109,7 @@ class AIDJTransitionCoordinator {
             guard let self = self else { return }
             
             playerB.play()
+            onPlayStarted(playerB)
             
             // 4. Perform Constant-Power (Sine/Cosine) Crossfade over 5.0 seconds
             let duration: TimeInterval = 5.0
