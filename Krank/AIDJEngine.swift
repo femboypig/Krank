@@ -14,7 +14,6 @@ class BeatDetector {
         
         guard let file = try? AVAudioFile(forReading: url) else { return defaultBPM }
         let format = file.processingFormat
-        // Read the first 25 seconds of the song to calculate BPM quickly
         let maxFrames = Int64(format.sampleRate * 25.0)
         let targetFrames = file.length < maxFrames ? file.length : maxFrames
         let frameCount = AVAudioFrameCount(targetFrames)
@@ -27,7 +26,6 @@ class BeatDetector {
         let sampleRate = format.sampleRate
         let length = Int(buffer.frameLength)
         
-        // Compute audio energy in hops of 512 samples
         let hopSize = 512
         let winSize = 1024
         var energyHistory: [Float] = []
@@ -43,7 +41,6 @@ class BeatDetector {
             i += hopSize
         }
         
-        // Count rhythmic peaks to estimate tempo
         var peakCount = 0
         let threshold: Float = 0.04
         var lastPeakIndex = 0
@@ -54,7 +51,7 @@ class BeatDetector {
             let next = energyHistory[k + 1]
             
             if curr > prev && curr > next && curr > threshold {
-                if k - lastPeakIndex > 12 { // Debounce close peaks to avoid double triggering
+                if k - lastPeakIndex > 12 {
                     peakCount += 1
                     lastPeakIndex = k
                 }
@@ -65,7 +62,6 @@ class BeatDetector {
         let bps = Double(peakCount) / duration
         let bpm = bps * 60.0
         
-        // Clamp computed tempo to common musical ranges: 60 - 180 BPM
         var finalBPM = bpm
         while finalBPM < 60 { finalBPM *= 2 }
         while finalBPM > 180 { finalBPM /= 2 }
@@ -74,7 +70,7 @@ class BeatDetector {
     }
 }
 
-// MARK: - Smart Transition Coordinator (Beat-matching & Tempo Ramping)
+// MARK: - Smart Transition Coordinator (On-Beat Trigger & Constant-Power Crossfade)
 
 class AIDJTransitionCoordinator {
     var primaryPlayer: AVAudioPlayer?
@@ -88,58 +84,59 @@ class AIDJTransitionCoordinator {
         
         self.primaryPlayer = playerA
         
-        // Run BPM estimation
+        // 1. Calculate the beat interval of the currently playing track to perform on-beat alignment
         let bpmA = BeatDetector.estimateBPM(for: playerA.url!)
-        let bpmB = BeatDetector.estimateBPM(for: url)
+        let beatInterval = 60.0 / bpmA
         
-        print("[AIDJ] Starting smart transition: Song A (\(bpmA) BPM) -> Song B (\(bpmB) BPM)")
+        print("[DJEngine] Starting transition: Song A (\(bpmA) BPM, Beat interval: \(beatInterval)s) -> Song B")
         
-        // Initialize player B
+        // 2. Initialize Player B with bit-perfect native configuration (enableRate is false to avoid DSP quality degradation)
         guard let playerB = try? AVAudioPlayer(contentsOf: url) else {
             isTransitioning = false
             return
         }
         
-        playerB.enableRate = true
         playerB.volume = 0.0
         playerB.prepareToPlay()
         self.secondaryPlayer = playerB
         
-        // Beat matching: Adjust Song B's rate to match Song A's tempo
-        let matchedRate = Float(bpmA / bpmB)
-        // Clamp rate variation to +/- 20% to avoid comical pitch shifts
-        let targetRate = min(max(matchedRate, 0.8), 1.2)
-        playerB.rate = targetRate
+        // 3. Calculate time until the next beat in Song A to align the start of Song B
+        let elapsedInBeat = playerA.currentTime.truncatingRemainder(dividingBy: beatInterval)
+        let timeUntilNextBeat = beatInterval - elapsedInBeat
         
-        // Start playback
-        playerB.play()
-        
-        // Smooth crossfade + dynamic tempo ramp
-        let duration: TimeInterval = 6.0 // 6 second transition
-        let steps = 60
-        let interval = duration / Double(steps)
-        var currentStep = 0
-        
-        Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] timer in
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
+        // Trigger Song B exactly on-beat with Song A
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeUntilNextBeat) { [weak self] in
+            guard let self = self else { return }
             
-            currentStep += 1
-            let progress = Double(currentStep) / Double(steps)
+            playerB.play()
             
-            // Linear volume fade
-            playerA.volume = Float(1.0 - progress)
-            playerB.volume = Float(progress)
+            // 4. Perform Constant-Power (Sine/Cosine) Crossfade over 5.0 seconds
+            let duration: TimeInterval = 5.0
+            let steps = 50
+            let interval = duration / Double(steps)
+            var currentStep = 0
             
-            if currentStep >= steps {
-                timer.invalidate()
-                playerA.stop()
-                playerB.volume = 1.0
-                playerB.rate = 1.0
-                self.isTransitioning = false
-                completion(playerB)
+            Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] timer in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+                
+                currentStep += 1
+                let progress = Double(currentStep) / Double(steps)
+                
+                // Constant-power trigonometric curve: sum of squares is always 1.0 (no volume dips)
+                let angle = progress * (.pi / 2.0)
+                playerA.volume = Float(cos(angle))
+                playerB.volume = Float(sin(angle))
+                
+                if currentStep >= steps {
+                    timer.invalidate()
+                    playerA.stop()
+                    playerB.volume = 1.0
+                    self.isTransitioning = false
+                    completion(playerB)
+                }
             }
         }
     }
