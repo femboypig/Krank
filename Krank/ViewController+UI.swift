@@ -254,22 +254,9 @@ extension ViewController {
         // Apply drum-roll cylinder mask (fade top/bottom edges)
         applyTableGradientMask()
         
-        // Add Swipe Gestures on Table View to navigate categories
-        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-        swipeLeft.direction = .left
-        tableView.addGestureRecognizer(swipeLeft)
-        
-        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-        swipeRight.direction = .right
-        tableView.addGestureRecognizer(swipeRight)
-        
         // Add Custom Long-Press Gesture on Cells to replace native Context Menu
         let cellLongPress = UILongPressGestureRecognizer(target: self, action: #selector(handleCellLongPress(_:)))
         tableView.addGestureRecognizer(cellLongPress)
-        
-        // Force scroll view paging to wait for swipe gestures to fail, resolving conflict
-        scrollView.panGestureRecognizer.require(toFail: swipeLeft)
-        scrollView.panGestureRecognizer.require(toFail: swipeRight)
         
         // --- Compact Floating Pill Miniplayer Card (Thinner style) ---
         miniPlayerView = UIView()

@@ -343,7 +343,7 @@ extension ViewController {
         
         // Scroll to Page 2
         let width = scrollView.frame.size.width
-        scrollView.setContentOffset(CGPoint(x: width, y: 0), animated: true)
+        scrollView.setContentOffset(CGPoint(x: width * 2, y: 0), animated: true)
     }
     
     func updateMiniPlayerUI() {

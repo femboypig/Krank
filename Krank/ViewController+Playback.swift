@@ -103,40 +103,46 @@ extension ViewController {
     }
     
     func playOrPause() {
-        guard audioPlayer != nil else {
+        guard let player = audioPlayer else {
             if !filteredTracks.isEmpty {
                 currentTrackIndex = 0
                 playCurrentTrack()
             }
             return
         }
-        if audioPlayer?.isPlaying == true {
-            audioPlayer?.pause()
-            playPauseButton.setImage(UIImage(systemName: "play.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
-            stopArtworkAnimation()
-        } else {
-            audioPlayer?.play()
-            playPauseButton.setImage(UIImage(systemName: "pause.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
-            startArtworkAnimation()
-            
-            let playbackImpact = UIImpactFeedbackGenerator(style: .medium)
-            playbackImpact.prepare()
-            playbackImpact.impactOccurred()
+        
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.prepare()
+        impact.impactOccurred()
+        
+        if aidj.isTransitioning {
+            aidj.primaryPlayer?.stop()
+            aidj.isTransitioning = false
         }
+        
+        if player.isPlaying {
+            player.pause()
+            updateTimer?.invalidate()
+            stopArtworkAnimation()
+            playPauseButton.setImage(UIImage(systemName: "play.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
+        } else {
+            player.play()
+            startTimer()
+            startArtworkAnimation()
+            playPauseButton.setImage(UIImage(systemName: "pause.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
+        }
+        
         updateNowPlayingInfo()
         updateMiniPlayerUI()
     }
     
+    // MARK: - Playback Queue Navigation
+    
     func rebuildShuffleQueue() {
-        guard !filteredTracks.isEmpty else {
-            shuffledIndices = []
-            shuffledPosition = 0
-            return
-        }
-        
         let count = filteredTracks.count
-        var indices = Array(0..<count)
+        guard count > 0 else { return }
         
+        var indices = Array(0..<count)
         if let currentIdx = currentTrackIndex, currentIdx < count {
             indices.remove(at: currentIdx)
             indices.shuffle()
@@ -152,11 +158,12 @@ extension ViewController {
     @objc func playNextTrack() {
         guard !filteredTracks.isEmpty else { return }
         
-        if audioPlayer?.isPlaying == true {
-            transitionToNextTrack()
-        } else {
-            forcePlayNextTrack()
+        if aidj.isTransitioning {
+            aidj.primaryPlayer?.stop()
+            aidj.isTransitioning = false
         }
+        
+        forcePlayNextTrack()
     }
     
     func forcePlayNextTrack() {
@@ -195,6 +202,8 @@ extension ViewController {
             return
         }
         
+        currentPlayer.delegate = nil // Stop delegating so old player stops quietly
+        
         // Find next track index
         let nextIndex: Int
         if isShuffleEnabled {
@@ -218,13 +227,14 @@ extension ViewController {
         
         let nextTrack = filteredTracks[nextIndex]
         
-        // Stop progress updates during transition
-        updateTimer?.invalidate()
+        // Start transition background tasks (tempo mapping & volume ramping)
+        aidj.startTransition(from: currentPlayer, toTrack: nextTrack.url) { _ in
+            // Done transitioning
+        }
         
-        aidj.startTransition(from: currentPlayer, toTrack: nextTrack.url) { [weak self] newPlayer in
-            guard let self = self else { return }
-            
-            self.audioPlayer = newPlayer
+        // Immediately swap active reference to new player B, so timer & UI update instantly!
+        if let playerB = aidj.secondaryPlayer {
+            self.audioPlayer = playerB
             self.audioPlayer?.delegate = self
             self.currentTrackIndex = nextIndex
             
@@ -237,28 +247,26 @@ extension ViewController {
             }
             
             // Full UI updating
-            let track = self.filteredTracks[nextIndex]
             self.playPauseButton.setImage(UIImage(systemName: "pause.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 52, weight: .bold)), for: .normal)
-            self.trackTitleLabel.text = track.title
+            self.trackTitleLabel.text = nextTrack.title
             
-            if track.artist != "Unknown Artist" && !track.artist.isEmpty {
-                self.artistLabel.text = track.artist
+            if nextTrack.artist != "Unknown Artist" && !nextTrack.artist.isEmpty {
+                self.artistLabel.text = nextTrack.artist
                 self.artistLabel.isHidden = false
             } else {
                 self.artistLabel.text = ""
                 self.artistLabel.isHidden = true
             }
             
-            if let artwork = track.artwork {
+            if let artwork = nextTrack.artwork {
                 self.coverImageView.image = artwork
             } else {
                 self.coverImageView.image = UIImage(named: "logo")
             }
             
-            self.progressSlider.maximumValue = Float(track.duration)
+            self.progressSlider.maximumValue = Float(nextTrack.duration)
             self.progressSlider.value = 0
             
-            self.startTimer()
             self.startArtworkAnimation()
             self.updateNowPlayingInfo()
             self.tableView.reloadData()
@@ -270,6 +278,11 @@ extension ViewController {
     
     @objc func playPreviousTrack() {
         guard !filteredTracks.isEmpty else { return }
+        
+        if aidj.isTransitioning {
+            aidj.primaryPlayer?.stop()
+            aidj.isTransitioning = false
+        }
         
         if isShuffleEnabled {
             if shuffledIndices.isEmpty {
