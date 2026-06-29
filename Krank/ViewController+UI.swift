@@ -78,6 +78,10 @@ extension ViewController {
         view.addSubview(scrollView)
         
         // Page Containers
+        page0 = UIView()
+        page0.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(page0)
+        
         page1 = UIView()
         page1.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(page1)
@@ -97,8 +101,14 @@ extension ViewController {
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             
+            page0.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            page0.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            page0.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            page0.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            page0.heightAnchor.constraint(equalTo: scrollView.heightAnchor),
+            
             page1.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            page1.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            page1.leadingAnchor.constraint(equalTo: page0.trailingAnchor),
             page1.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             page1.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             page1.heightAnchor.constraint(equalTo: scrollView.heightAnchor),
@@ -111,8 +121,85 @@ extension ViewController {
             page2.heightAnchor.constraint(equalTo: scrollView.heightAnchor)
         ])
         
+        setupPage0Settings()
         setupPage1Library()
         setupPage2NowPlaying()
+    }
+    
+    func setupPage0Settings() {
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.font = UIFont(name: "Georgia-Bold", size: 42)
+        titleLabel.textColor = primaryTextColor()
+        titleLabel.text = "Settings."
+        page0.addSubview(titleLabel)
+        
+        // Settings Card
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.backgroundColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark ? UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0) : UIColor(red: 0.95, green: 0.93, blue: 0.90, alpha: 1.0)
+        }
+        card.layer.cornerRadius = 20
+        card.layer.borderWidth = 1.0
+        card.layer.borderColor = cardBorderColor().cgColor
+        page0.addSubview(card)
+        
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        label.textColor = primaryTextColor()
+        label.text = "AI DJ Transitions"
+        card.addSubview(label)
+        
+        let descLabel = UILabel()
+        descLabel.translatesAutoresizingMaskIntoConstraints = false
+        descLabel.font = UIFont.systemFont(ofSize: 12)
+        descLabel.textColor = .secondaryLabel
+        descLabel.numberOfLines = 0
+        descLabel.text = "Beat-matches and crossfades songs smoothly 6 seconds before they end."
+        card.addSubview(descLabel)
+        
+        let toggle = UISwitch()
+        toggle.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Ensure default key exists
+        if UserDefaults.standard.object(forKey: "Krank_AIDJEnabled") == nil {
+            UserDefaults.standard.set(true, forKey: "Krank_AIDJEnabled")
+        }
+        toggle.isOn = UserDefaults.standard.bool(forKey: "Krank_AIDJEnabled")
+        toggle.onTintColor = UIColor(red: 0.85, green: 0.36, blue: 0.22, alpha: 1.0) // Copper
+        toggle.addTarget(self, action: #selector(aidjToggleChanged(_:)), for: .valueChanged)
+        card.addSubview(toggle)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: page0.topAnchor, constant: 40),
+            titleLabel.leadingAnchor.constraint(equalTo: page0.leadingAnchor, constant: 24),
+            
+            card.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 30),
+            card.leadingAnchor.constraint(equalTo: page0.leadingAnchor, constant: 24),
+            card.trailingAnchor.constraint(equalTo: page0.trailingAnchor, constant: -24),
+            card.heightAnchor.constraint(equalToConstant: 100),
+            
+            toggle.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
+            toggle.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            
+            label.topAnchor.constraint(equalTo: card.topAnchor, constant: 18),
+            label.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            label.trailingAnchor.constraint(equalTo: toggle.leadingAnchor, constant: -16),
+            
+            descLabel.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 6),
+            descLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            descLabel.trailingAnchor.constraint(equalTo: toggle.leadingAnchor, constant: -16)
+        ])
+    }
+    
+    @objc func aidjToggleChanged(_ sender: UISwitch) {
+        UserDefaults.standard.set(sender.isOn, forKey: "Krank_AIDJEnabled")
+        
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        generator.impactOccurred()
     }
     
     func setupPage1Library() {

@@ -19,7 +19,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // Swipable Container
     var scrollView: UIScrollView!
     
-    // Page 1 (Library) Subviews
+    // Page 0 (Settings) & Page 1 (Library) Subviews
+    var page0: UIView!
     var page1: UIView!
     var tableView: CylinderTableView!
     var searchBar: UISearchBar!
@@ -78,6 +79,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var lastCenterRow: Int?
     let scrollFeedbackGenerator = UIImpactFeedbackGenerator(style: .light)
     let aidj = AIDJTransitionCoordinator()
+    var didInitialScroll = false
     
     // Favorites & Playlists Local Data Store
     var favoriteTracks: Set<String> = []
@@ -132,6 +134,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         applyCylinderEffect()
         updateFilterPillBorders()
         updateOverlayAlphas()
+        
+        if !didInitialScroll && scrollView.frame.size.width > 0 {
+            didInitialScroll = true
+            let width = scrollView.frame.size.width
+            scrollView.contentOffset = CGPoint(x: width, y: 0)
+        }
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
